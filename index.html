@@ -1,13 +1,247 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + TS</title>
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Teacherbinder</title>
+   <link rel="stylesheet" href="normalize.css">
+   <link rel="stylesheet" href="fonts/Roboto.css">
+   <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+   <main>
+      <div class="header">
+         <img src="./src/images/default-logo.png" />
+         <div class="input-container">
+            <input type="text" id="search-input" placeholder="Name, note or age to search" />
+            <button id="search-btn">Search</button>
+         </div>
+      </div>
+      <div class="options-container">
+         <div class="options">
+            <p>Teachers</p>
+            <p>Statistics</p>
+            <p>Favorites</p>
+            <p>About</p>
+         </div>
+         <button id="add-teacher">Add teacher</button>
+      </div>
+      <hr>
+      <div class="main-page">
+         <h1>Top Teachers</h1>
+         <div class="filters-panel">
+            <div class="filter">
+               <label>Age</label>
+               <select id="age-filter">
+                  <option>Not Selected</option>
+                  <option value="18-31">18-31</option>
+                  <option value="32-44">32-44</option>
+                  <option value="45-65">45-65</option>
+                  <option value="66-75">66-75</option>
+               </select>
+            </div>
+            <div class="filter">
+               <label>Region</label>
+               <select id="country-filter">
+                  <option>Not Selected</option>
+                  <option value="Europe">Europe</option>
+                  <option value="Asia">Asia</option>
+                  <option value="Australia">Australia</option>
+                  <option value="Africa">Africa</option>
+                  <option value="North America">North America</option>
+                  <option value="South America">South America</option>
+               </select>
+            </div>
+            <div class="filter">
+               <label>Sex</label>
+               <select id="gender-filter">
+                  <option>Not Selected</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+               </select>
+            </div>
+            <div class="filter">
+               <input id="photo-only" type="checkbox">
+               <label for="photo-only">Only with photo</label>
+            </div>
+            <div class="filter">
+               <input id="favorite-only" type="checkbox">
+               <label for="favorite-only">Only favorites</label>
+            </div>
+         </div>
+         <div class="top-teachers">
+         </div>
+         <button class="load-more">
+            <img  src="./src/images/more.png" />
+         </button>
+         <hr>
+         <div class="statistics">
+            <h1>Statistics</h1>
+            <table>
+               <thead>
+                  <tr>
+                     <th id="full_name">Name</th>
+                     <th id="course">Course</th>
+                     <th id="age">Age</th>
+                     <th id="gender">Gender</th>
+                     <th id="country">Country</th>
+                  </tr>
+               </thead>
+               <tbody>
+
+               </tbody>
+            </table>
+            <div class="pagination">
+
+            </div>
+         </div>
+         <hr>
+         <div class="favorites">
+            <h1>Favorites</h1>
+            <div class="scroll-container">
+               <button class="scroll-btn">
+                  <img src="./src/images/left-scroll.png" />
+               </button>
+               <div class="scroll-items">
+
+               </div>
+               <button class="scroll-btn">
+                  <img src="./src/images/right-scroll.png" />
+               </button>
+            </div>
+         </div>
+      </div>
+      <hr>
+      <div>
+         <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Consectetur culpa modi cum odio expedita,
+            laudantium corporis temporibus quod. Nostrum dicta explicabo consequatur voluptatibus eos iure alias omnis
+            odit minus debitis?</p>
+         <p>Lorem ipsum, dolor sit amet consectetur adipisicing elit. Possimus cum corporis laudantium, vel fugiat saepe
+            quos quam. Iusto asperiores eveniet vero quia, praesentium quidem soluta officia esse assumenda, dolor
+            ducimus!</p>
+         <p>Lorem ipsum dolor sit amet consectetur, adipisicing elit. Porro exercitationem repellendus eaque, delectus
+            perspiciatis blanditiis sed iste consequatur aspernatur, aut alias rerum sequi maxime nam officia. Ea
+            debitis repellendus iure!</p>
+         <div class="options-container">
+            <div class="options">
+               <p>Teachers</p>
+               <p>Statistics</p>
+               <p>Favorites</p>
+               <p>About</p>
+            </div>
+            <button id="add-teacher">Add teacher</button>
+         </div>
+      </div>
+   </main>
+
+   <div id="modal" class="modal">
+      <div class="modal-content">
+         <div class="modal-header">
+            <h2>Add Teacher</h2>
+            <button class="close-btn">&times;</button>
+         </div>
+         <form class="teacher-form">
+
+            <div class="full-page-option">
+               <label for="name">Name</label>
+               <input type="text" id="name" placeholder="Enter name">
+            </div>
+
+            <div class="full-page-option">
+               <label>Speciality</label>
+               <select id="speciality">
+                  <option value="Mathematics">Mathematics</option>
+                  <option value="Physics">Physics</option>
+                  <option value="Chemistry">Chemistry</option>
+               </select>
+            </div>
+
+            <div class="part-page-option">
+               <div>
+                  <label for="country">Country</label>
+                  <select id="country-modal">
+                     <option value="Ukraine">Ukraine</option>
+                     <option value="USA">USA</option>
+                     <option value="UK">UK</option>
+                  </select>
+               </div>
+               <div>
+                  <label for="city">City</label>
+                  <input type="text" id="city" placeholder="Enter city">
+               </div>
+               <div>
+                  <label for="email">Email</label>
+                  <input type="email" id="email" placeholder="Enter email">
+               </div>
+               <div>
+                  <label for="phone">Phone</label>
+                  <input type="tel" id="phone" placeholder="Enter phone number">
+               </div>
+               <div>
+                  <label for="dob">Date of birth</label>
+                  <input type="date" id="dob">
+               </div>
+            </div>
+
+            <div class="sex-options">
+               <label>Sex</label>
+               <div class="radio-group">
+                  <label for="male">Male</label>
+                  <input type="radio" id="male" name="sex" value="Male">
+
+                  <label for="female">Female</label>
+                  <input type="radio" id="female" name="sex" value="Female">
+               </div>
+            </div>
+
+            <div class="color-picker">
+               <label for="bgcolor">Background color</label>
+               <input type="color" id="bgcolor">
+            </div>
+
+            <div class="full-page-option">
+               <label for="notes">Notes (optional)</label>
+               <textarea id="notes" rows="4"></textarea>
+            </div>
+
+
+            <button class="submit-btn">Add</button>
+         </form>
+      </div>
+   </div>
+
+   <div id="teacherModal" class="modal">
+      <div class="teacherModal-content">
+         <div class="modal-header">
+            <h2>Teacher Info</h2>
+            <button class="close-btn-teacherModal">&times;</button>
+         </div>
+         <div class="modal-body">
+            <div class="teacher-info">
+               <img src="./src/images/teacher.jpg" alt="Teacher" class="teacher-photo">
+               <div class="teacher-details">
+                  <div class="modal-title">
+                     <h2>Ihor Tkachuk</h2>
+                     <img src="./src/images/star-default.png" />
+                  </div>
+                  <h3 class="speciality">Chemistry</h3>
+                  <p>Kyiv, Ukraine</p>
+                  <p>35, Male</p>
+                  <a href="mailto:ihor_tkachuk@domain.com">ihor_tkachuk@domain.com</a>
+                  <p>+380969493252</p>
+               </div>
+            </div>
+            <p class="teacher-description">
+               Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ab autem consectetur culpa cumque, distinctio
+               dolor dolorem doloremque ex explicabo facilis.
+            </p>
+            <a href="#" class="toggle-map">toggle map</a>
+         </div>
+      </div>
+   </div>
+   <script type="module" src="./src/main.ts"></script>
+</body>
+
 </html>
