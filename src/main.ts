@@ -1,27 +1,15 @@
 import './style.css';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { Teacher } from './types';
+import { Validation } from './types';
+import { Chart, ArcElement, Tooltip, Legend, Title, PieController } from 'chart.js';
+import _ from 'lodash';
+import dayjs from 'dayjs';
 
-interface Teacher {
-  id: string;
-  full_name: string;
-  course: string;
-  country: string;
-  city: string;
-  email: string;
-  phone: string;
-  gender: string;
-  b_date: string;
-  note: string | null;
-  favorite: boolean;
-  picture_large: string | null;
-  picture_thumbnail: string | null;
-  age: number | null;
-  bg_color: string;
-}
 
-interface Validation{
-  valid: boolean;
-  errors: string[];
-}
+Chart.register(ArcElement, Tooltip, Legend, Title, PieController);
+
 const modal = document.getElementById('modal') as HTMLElement;
 const openModalBtn = document.getElementById('add-teacher') as HTMLButtonElement;
 const closeModalBtn = document.querySelector('.close-btn') as HTMLButtonElement;
@@ -31,7 +19,6 @@ const closeTeacherModalBtn = document.querySelector('.close-btn-teacherModal') a
 openModalBtn.addEventListener('click', openAddTeacherModal);
 closeModalBtn.addEventListener('click', closeAddTeacherModal);
 closeTeacherModalBtn.addEventListener('click', closeTeacherInfoModal);
-
 
 const regionFilter = document.querySelector('#country-filter') as HTMLSelectElement;
 const ageFilter = document.querySelector('#age-filter') as HTMLSelectElement;
@@ -68,7 +55,9 @@ let sortedTeachersList: Teacher[] = [];
 let favoritesList: Teacher[] = [];
 const rowsPerPage = 10;
 let currentPage = 1;
-
+let map: L.Map | null = null;
+let isMapOpened = false;
+let teacherPieChart: Chart<"pie", number[], string> | null = null;
 
 async function fetchUsers(results: number = 50) {
   try {
@@ -151,7 +140,6 @@ function renderFavorites() {
   updateCardsListeners();
 }
 
-
 function applyFilters() {
   const filters = {
     continent: regionFilter.value !== 'Not Selected' ? regionFilter.value : null,
@@ -167,15 +155,84 @@ function applyFilters() {
   setupPagination();
 }
 
-
 document.querySelectorAll('.statistics th').forEach(header => {
   header.addEventListener('click', () => {
-    const sortBy : string = header.getAttribute('id') || '';
+    const sortBy: string = header.getAttribute('id') || '';
     sortedTeachersList = sortUsers(filteredTeachersList, sortBy);
     renderStatistics(currentPage);
+    renderPieChart(sortBy);
   });
 });
 
+
+function getCategoryData(teachersList: Teacher[], sortBy: string): { labels: string[], data: number[] } {
+  const categoryCount: { [key: string]: number } = {};
+
+  teachersList.forEach(teacher => {
+    const categoryValue = teacher[sortBy as keyof Teacher] as string;
+    if (categoryValue) {
+      categoryCount[categoryValue] = (categoryCount[categoryValue] || 0) + 1;
+    }
+  });
+
+  return {
+    labels: Object.keys(categoryCount),
+    data: Object.values(categoryCount) 
+  };
+}
+
+
+function renderPieChart(sortBy: string) {
+  const canvas = document.getElementById('myChart') as HTMLCanvasElement;
+  const ctx = canvas.getContext('2d');
+
+  if (!ctx) return;
+
+  const { labels, data } = getCategoryData(filteredTeachersList, sortBy);
+
+  if (teacherPieChart) {
+    teacherPieChart.destroy();
+  }
+
+  teacherPieChart = new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: [
+          'rgba(255, 99, 132, 0.2)',
+          'rgba(54, 162, 235, 0.2)',
+          'rgba(255, 206, 86, 0.2)',
+          'rgba(75, 192, 192, 0.2)',
+          'rgba(153, 102, 255, 0.2)',
+          'rgba(255, 159, 64, 0.2)'
+        ],
+        borderColor: [
+          'rgba(255, 99, 132, 1)',
+          'rgba(54, 162, 235, 1)',
+          'rgba(255, 206, 86, 1)',
+          'rgba(75, 192, 192, 1)',
+          'rgba(153, 102, 255, 1)',
+          'rgba(255, 159, 64, 1)'
+        ],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'top',
+        },
+        title: {
+          display: true,
+          text: `${sortBy}`
+        }
+      }
+    }
+  });
+}
 
 function renderStatistics(page: number) {
   const tbody = document.querySelector('.statistics tbody') as HTMLElement;
@@ -257,7 +314,7 @@ function updatePagination() {
 (document.querySelector('.submit-btn') as HTMLElement).addEventListener('click', async (e) => {
   e.preventDefault();
 
-  const newUser = {
+  const formTeacher = {
     full_name: (document.querySelector('#name') as HTMLInputElement).value,
     course: (document.querySelector('#speciality') as HTMLInputElement).value,
     country: (document.querySelector('#country-modal') as HTMLInputElement).value,
@@ -267,23 +324,41 @@ function updatePagination() {
     gender: (document.querySelector('input[name="sex"]:checked') as HTMLInputElement).value,
     b_date: (document.querySelector('#dob') as HTMLInputElement).value,
     note: (document.querySelector('#notes') as HTMLInputElement).value,
-    favorite: false,
     bg_color: (document.querySelector('#bgcolor') as HTMLInputElement).value,
   };
 
-  const validation = validateUser(newUser);
+  const newTeacher: Teacher = {
+    id: Math.random().toString(16).slice(2),
+    gender: formTeacher.gender,
+    title: formTeacher.gender.toLocaleLowerCase() == 'male' ? 'Mr' : 'Mrs',
+    full_name: formTeacher.full_name,
+    city: formTeacher.city,
+    state: null,
+    country: formTeacher.country,
+    postcode: null,
+    coordinates: null,
+    timezone: null,
+    email: formTeacher.email,
+    b_date: formTeacher.b_date,
+    age: null,
+    phone: formTeacher.phone,
+    picture_large: null,
+    picture_thumbnail: null,
+    favorite: false,
+    course: formTeacher.course,
+    bg_color: formTeacher.bg_color,
+    note: formTeacher.note
+  }
+  const validation = validateUser(newTeacher);
   if (validation.valid) {
     try {
-      const response = await fetch('http://localhost:5000/teachers', {
+      await fetch('http://localhost:5000/teachers', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(newUser)
+        body: JSON.stringify(newTeacher)
       });
-
-      const newTeacher = await response.json();
-      console.log('New teacher:', newTeacher);
 
       teachersList.push(newTeacher);
       renderTeachers(teachersList);
@@ -324,11 +399,31 @@ function openAddTeacherModal() {
 }
 
 function closeTeacherInfoModal() {
+  closeMap();
   teacherModal.style.display = 'none';
 }
 
+function closeMap() {
+  const teacherMap = teacherModal.querySelector('#map') as HTMLElement;
+  teacherMap.innerHTML = '';
+  teacherMap.style.height = '0px';
+  isMapOpened = false;
+}
 
-function openTeacherInfoModal(teacher : Teacher) {
+function daysUntilNextBirthday(b_date: string): number {
+  const today = dayjs();
+  const birthDate = dayjs(b_date);
+  
+  const nextBirthday = birthDate.year(today.year());
+  
+  if (nextBirthday.isBefore(today)) {
+    return nextBirthday.add(1, 'year').diff(today, 'day');
+  } else {
+    return nextBirthday.diff(today, 'day');
+  }
+}
+
+function openTeacherInfoModal(teacher: Teacher) {
   const teacherModal = document.getElementById('teacherModal') as HTMLElement;
   const teacherPhoto = teacherModal.querySelector('.teacher-photo') as HTMLImageElement;
   const teacherName = teacherModal.querySelector('.teacher-details h2') as HTMLHeadingElement;
@@ -338,9 +433,13 @@ function openTeacherInfoModal(teacher : Teacher) {
   const teacherEmail = teacherModal.querySelector('.teacher-details a') as HTMLAnchorElement;
   const teacherPhone = teacherModal.querySelector('.teacher-details p:nth-child(6)') as HTMLParagraphElement;
   const teacherDescription = teacherModal.querySelector('.teacher-description') as HTMLElement;
+  const toggleMapBtn = teacherModal.querySelector('.toggle-map') as HTMLElement;
+  const teacherBirthday = teacherModal.querySelector('.teacher-details .birthday') as HTMLElement;
+  
+  const daysUntilBirthday = teacher.b_date ? daysUntilNextBirthday(teacher.b_date) : 'N/A';
+  teacherBirthday.textContent = `Days until next birthday: ${daysUntilBirthday}`; 
   
   let addToFavoriteBtn = document.querySelector('.modal-title img') as HTMLImageElement;
-
   let isFavorite = favoritesList.some(favTeacher => favTeacher.id === teacher.id);
 
   teacherPhoto.src = teacher.picture_large || "./src/images/no-teacher-photo.png";
@@ -352,6 +451,17 @@ function openTeacherInfoModal(teacher : Teacher) {
   teacherEmail.href = `mailto:${teacher.email}`;
   teacherPhone.textContent = teacher.phone;
   teacherDescription.textContent = teacher.note || 'No additional information';
+  toggleMapBtn.addEventListener('click', () => {
+    if (!isMapOpened) {
+      setTimeout(() => {
+        initializeMap(teacher.coordinates, teacher.full_name);
+      }, 300);
+    } else {
+      setTimeout(() => {
+        closeMap();
+      }, 300);
+    }
+  });
 
   addToFavoriteBtn.src = isFavorite ? './src/images/star.png' : './src/images/star-default.png';
   addToFavoriteBtn.onclick = () => {
@@ -374,6 +484,27 @@ function openTeacherInfoModal(teacher : Teacher) {
   teacherModal.style.display = 'flex';
 }
 
+function initializeMap(coordinates: any, name: string) {
+  const mapContainer = document.getElementById('map');
+
+  if (mapContainer) {
+    if (map !== null) {
+      map.remove();
+    }
+    mapContainer.style['height'] = '300px';
+    map = L.map(mapContainer).setView([coordinates.latitude, coordinates.longitude], 13);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    L.marker([coordinates.latitude, coordinates.longitude]).addTo(map)
+      .bindPopup(`${name}`)
+      .openPopup();
+
+  }
+
+  isMapOpened = true;
+}
 
 function updateCardsListeners() {
   const teachersCards = document.querySelectorAll('.teacher-card');
@@ -426,35 +557,34 @@ function formatUsers(users: any[]) {
 
 
 
-function validateUser(user: any) : Validation{
-  const errors = [];
-  if (typeof user.full_name !== 'string' || user.full_name.charAt(0) !== user.full_name.charAt(0).toUpperCase()) {
+function validateUser(user: any): Validation {
+  const errors: string[] = [];
+
+  if (!_.isString(user.full_name) || !_.startsWith(user.full_name, _.upperFirst(user.full_name))) {
     errors.push("Invalid name format");
   }
 
-  if (typeof user.gender !== 'string' || user.gender.charAt(0) !== user.gender.charAt(0).toUpperCase()) {
+  if (!_.isString(user.gender) || !_.startsWith(user.gender, _.upperFirst(user.gender))) {
     errors.push("Invalid gender format");
   }
 
-  if (typeof user.note !== 'string' || user.note.charAt(0) !== user.note.charAt(0).toUpperCase()) {
+  if (!_.isString(user.note) || !_.startsWith(user.note, _.upperFirst(user.note))) {
     errors.push("Invalid note format");
   }
 
-  if (typeof user.city !== 'string' || user.city.charAt(0) !== user.city.charAt(0).toUpperCase()) {
+  if (!_.isString(user.city) || !_.startsWith(user.city, _.upperFirst(user.city))) {
     errors.push("Invalid city format");
   }
 
-  if (typeof user.country !== 'string' || user.country.charAt(0) !== user.country.charAt(0).toUpperCase()) {
+  if (!_.isString(user.country) || !_.startsWith(user.country, _.upperFirst(user.country))) {
     errors.push("Invalid country format");
   }
 
-  const phoneRegex = /^[\d\s+\-()]+$/;
-  if (!phoneRegex.test(user.phone)) {
+  if (!/^[\d\s+\-()]+$/.test(user.phone)) {
     errors.push('Invalid phone format');
   }
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(user.email)) {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(user.email)) {
     errors.push('Invalid email format');
   }
 
@@ -462,43 +592,16 @@ function validateUser(user: any) : Validation{
 }
 
 function filterUsers(users: any[], filters: any) {
-  return users.filter(user => {
-    return (filters.continent ? continents[filters.continent].includes(user.country) : true) &&
-      (filters.age ? isWithinAgeRange(user.age, filters.age) : true) &&
-      (filters.gender ? user.gender && user.gender.toLowerCase() == filters.gender.toLowerCase() : true) &&
-      (filters.favorite ? user.favorite && user.favorite == filters.favorite : true) &&
-      (filters.photo ? user.picture_thumbnail != null && user.picture_large != null : true);
+  return _.filter(users, user => {
+    return (!filters.continent || _.includes(continents[filters.continent], user.country)) &&
+      (!filters.age || isWithinAgeRange(user.age, filters.age)) &&
+      (!filters.gender || _.toLower(user.gender) === _.toLower(filters.gender)) &&
+      (!filters.favorite || user.favorite === filters.favorite) &&
+      (!filters.photo || (user.picture_thumbnail && user.picture_large));
   });
 }
 
-function sortUsers(users: any[], sortBy : string, order = 'asc') {
+function sortUsers(users: any[], sortBy: string) {
   const usersCopy = users.slice();
-  return usersCopy.sort((a, b) => {
-    let valueA : any= a[sortBy];
-    let valueB : any= b[sortBy];
-
-    if ((typeof valueA === 'number' || valueA instanceof Date) &&
-      (typeof valueB === 'number' || valueB instanceof Date)) {
-
-      return order === 'asc' ? +valueA - +valueB : +valueB - +valueA;
-    }
-
-    if (typeof valueA === 'string' && typeof valueB === 'string') {
-      valueA = valueA.toLowerCase();
-      valueB = valueB.toLowerCase();
-      if (valueA < valueB) {
-        return order === 'asc' ? -1 : 1;
-      }
-      if (valueA > valueB) {
-        return order === 'asc' ? 1 : -1;
-      }
-      return 0;
-    }
-
-    return 0;
-  });
-}
-
-function findUser(users: any[], key: number, value: any) : any[] {
-  return users.find(user => user[key] === value);
+  return _.orderBy(usersCopy, [sortBy]);
 }

@@ -610,3 +610,11 @@ tr:nth-child(even) {
 .load-more img:hover{
   content: url("../images/more-hover.png");
 }
+
+#map{
+  height: 0px;
+}
+
+#myChart{
+  height: 300px;
+}
