@@ -615,6 +615,7 @@ tr:nth-child(even) {
   height: 0px;
 }
 
-#myChart{
-  height: 300px;
+.chartCont{
+  padding-left: 18%;
+  height: 0px;
 }

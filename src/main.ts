@@ -177,7 +177,7 @@ function getCategoryData(teachersList: Teacher[], sortBy: string): { labels: str
 
   return {
     labels: Object.keys(categoryCount),
-    data: Object.values(categoryCount) 
+    data: Object.values(categoryCount)
   };
 }
 
@@ -185,7 +185,8 @@ function getCategoryData(teachersList: Teacher[], sortBy: string): { labels: str
 function renderPieChart(sortBy: string) {
   const canvas = document.getElementById('myChart') as HTMLCanvasElement;
   const ctx = canvas.getContext('2d');
-
+  const chartCont = document.querySelector('.chartCont') as HTMLElement;
+  chartCont.style.height ='600px';
   if (!ctx) return;
 
   const { labels, data } = getCategoryData(filteredTeachersList, sortBy);
@@ -294,14 +295,14 @@ function updatePagination() {
 
 (document.querySelector('#search-btn') as HTMLElement).addEventListener('click', () => {
   const searchTerm = (document.querySelector('#search-input') as HTMLInputElement).value.toLowerCase();
-  if (searchTerm == '') {
+  if (_.isEmpty(searchTerm)) {
     filteredTeachersList = teachersList;
   } else {
-    filteredTeachersList = teachersList.filter(user =>
-      user.full_name.toLowerCase().includes(searchTerm) ||
-      (user.note && user.note.toLowerCase().includes(searchTerm)) ||
-      String(user.age).includes(searchTerm) ||
-      user.course.toLowerCase().includes(searchTerm)
+    filteredTeachersList = _.filter(teachersList, user => 
+      _.includes(_.toLower(user.full_name), searchTerm) ||
+      (_.isString(user.note) && _.includes(_.toLower(user.note), searchTerm)) ||
+      _.includes(String(user.age), searchTerm) ||
+      _.includes(_.toLower(user.course), searchTerm)
     );
   }
   renderTeachers(filteredTeachersList);
@@ -413,9 +414,9 @@ function closeMap() {
 function daysUntilNextBirthday(b_date: string): number {
   const today = dayjs();
   const birthDate = dayjs(b_date);
-  
+
   const nextBirthday = birthDate.year(today.year());
-  
+
   if (nextBirthday.isBefore(today)) {
     return nextBirthday.add(1, 'year').diff(today, 'day');
   } else {
@@ -435,10 +436,10 @@ function openTeacherInfoModal(teacher: Teacher) {
   const teacherDescription = teacherModal.querySelector('.teacher-description') as HTMLElement;
   const toggleMapBtn = teacherModal.querySelector('.toggle-map') as HTMLElement;
   const teacherBirthday = teacherModal.querySelector('.teacher-details .birthday') as HTMLElement;
-  
+
   const daysUntilBirthday = teacher.b_date ? daysUntilNextBirthday(teacher.b_date) : 'N/A';
-  teacherBirthday.textContent = `Days until next birthday: ${daysUntilBirthday}`; 
-  
+  teacherBirthday.textContent = `Days until next birthday: ${daysUntilBirthday}`;
+
   let addToFavoriteBtn = document.querySelector('.modal-title img') as HTMLImageElement;
   let isFavorite = favoritesList.some(favTeacher => favTeacher.id === teacher.id);
 
@@ -529,30 +530,30 @@ function isWithinAgeRange(age: number, range: String) {
 
 // Methods from lab2
 function formatUsers(users: any[]) {
-  return users.map(user => {
-    return {
-      id: (user.id && user.id.name && user.id.value) ? `${user.id.name}${user.id.value}` : Math.random().toString(16).slice(2) || (user.id ? user.id : Math.random().toString(16).slice(2)),
-      gender: user.gender || null,
-      title: user.title || (user.name && user.name.title) || null,
-      full_name: user.full_name || (user.name ? `${user.name.first} ${user.name.last}` : null),
-      city: user.city || (user.location && user.location.city) || null,
-      state: user.state || (user.location && user.location.state) || null,
-      country: user.country || (user.location && user.location.country) || null,
-      postcode: user.postcode || (user.location && user.location.postcode) || null,
-      coordinates: user.coordinates || (user.location && user.location.coordinates) || null,
-      timezone: user.timezone || (user.location && user.location.timezone) || null,
-      email: user.email || null,
-      b_date: user.b_day || (user.dob && user.dob.date) || null,
-      age: user.age || (user.dob && user.dob.age) || null,
-      phone: user.phone || user.cell || null,
-      picture_large: user.picture_large || (user.picture && user.picture.large) || null,
-      picture_thumbnail: user.picture_thumbnail || (user.picture && user.picture.thumbnail) || null,
-      favorite: user.favorite || false,
-      course: user.course || courses[Math.floor(Math.random() * courses.length)],
-      bg_color: user.bg_color || '#' + (Math.random() * 0xFFFFFF << 0).toString(16),
-      note: user.note || null
-    };
-  });
+  return users.map(user => ({
+    id: _.get(user, 'id.name') && _.get(user, 'id.value')
+      ? `${_.get(user, 'id.name')}${_.get(user, 'id.value')}`
+      : _.random(0, 1e16).toString(16),
+    gender: _.get(user, 'gender', null),
+    title: _.get(user, 'title', _.get(user, 'name.title', null)),
+    full_name: _.get(user, 'full_name', `${_.get(user, 'name.first', '')} ${_.get(user, 'name.last', '')}`),
+    city: _.get(user, 'city', _.get(user, 'location.city', null)),
+    state: _.get(user, 'state', _.get(user, 'location.state', null)),
+    country: _.get(user, 'country', _.get(user, 'location.country', null)),
+    postcode: _.get(user, 'postcode', _.get(user, 'location.postcode', null)),
+    coordinates: _.get(user, 'coordinates', _.get(user, 'location.coordinates', null)),
+    timezone: _.get(user, 'timezone', _.get(user, 'location.timezone', null)),
+    email: _.get(user, 'email', null),
+    b_date: _.get(user, 'b_date', _.get(user, 'dob.date', null)),
+    age: _.get(user, 'age', _.get(user, 'dob.age', null)),
+    phone: _.get(user, 'phone', _.get(user, 'cell', null)),
+    picture_large: _.get(user, 'picture_large', _.get(user, 'picture.large', null)),
+    picture_thumbnail: _.get(user, 'picture_thumbnail', _.get(user, 'picture.thumbnail', null)),
+    favorite: _.get(user, 'favorite', false),
+    course: _.get(user, 'course', _.sample(courses)),
+    bg_color: _.get(user, 'bg_color', `#${_.random(0, 0xFFFFFF).toString(16)}`),
+    note: _.get(user, 'note', null)
+  }));
 }
 
 
